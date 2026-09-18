@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { color-scheme: dark; }
+  body { @apply bg-ink-950 text-bone-200 antialiased; }
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-color: theme('colors.ink.950');
+    background-image:
+      radial-gradient(70rem 40rem at 12% -12rem, rgba(245, 166, 35, 0.09), transparent 60%),
+      radial-gradient(60rem 42rem at 92% 4%, rgba(239, 68, 68, 0.06), transparent 62%);
+  }
+  .tnum { font-variant-numeric: tabular-nums; }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-lg border border-white/[0.07] bg-ink-900/70 backdrop-blur-sm;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 18px 40px -28px rgba(0,0,0,0.9);
+  }
+  .panel-head { @apply flex items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-3.5; }
+  .label { @apply font-mono text-[10px] uppercase tracking-[0.18em] text-bone-500; }
+  .readout { @apply tnum font-mono font-semibold text-white; }
+  .chip { @apply inline-flex items-center gap-1.5 rounded border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em]; }
+  .nav-link { @apply relative flex items-center gap-2 rounded-md px-3 py-2 text-[13px] font-medium text-bone-400 transition-colors duration-200 hover:text-tab-200; }
+  .nav-link-active { @apply bg-tab-400/10 text-tab-200; }
+  .row { @apply grid items-center gap-4 border-b border-white/[0.04] px-5 py-3 text-[13px] transition-colors duration-200 last:border-b-0 hover:bg-white/[0.02]; }
+  .field { @apply w-full rounded border border-white/10 bg-ink-850 px-3 py-2 font-mono text-[13px] text-white outline-none transition-colors duration-200 focus:border-tab-400/60 focus:ring-1 focus:ring-tab-400/30; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2 text-[13px] font-medium transition-all duration-200 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40; }
+  .btn-ghost { @apply btn border border-white/10 text-bone-300 hover:border-tab-400/40 hover:text-tab-200; }
+}
+
+/* A pulse for the live-status dot, calm enough to sit on screen indefinitely. */
+@keyframes livepulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+.live-dot { animation: livepulse 2.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
