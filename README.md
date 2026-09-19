@@ -10,7 +10,7 @@ SAPS workbooks by a Python script kept in the repo.
 
 ---
 
-**[Live site](https://docket-sa.vercel.app)**
+**[Live site](https://docket-sigma-jet.vercel.app)** · [66-second demo](media/docket-demo.mp4)
 
 ---
 
