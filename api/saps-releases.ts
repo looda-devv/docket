@@ -83,17 +83,33 @@ interface Release {
   url: string;
   year: string;
   kind: 'annual' | 'quarter' | 'calendar' | 'notice' | 'other';
-  format: 'xlsx' | 'pdf';
+  format: string;
 }
+
+/**
+ * Formats SAPS publishes in.
+ *
+ * Matching only xlsx and pdf missed the 2026/27 first quarter entirely: that
+ * release went up as a macro-enabled .xlsm with a .pptx presentation instead
+ * of the usual .xlsx and .pdf. The dashboard reported the newest data as the
+ * previous quarter while the current one sat on the page unnoticed — a live
+ * feed that silently ignores a release is worse than no live feed, so the
+ * match is now broad and the format is reported rather than assumed.
+ */
+const DATA_FORMATS = ['xlsx', 'xlsm', 'xls', 'csv'];
+const DOC_FORMATS = ['pdf', 'pptx', 'ppt', 'docx'];
 
 /** Pull the downloadable releases out of a SAPS listing page. */
 function parseReleases(html: string): Release[] {
   const out: Release[] = [];
-  const re = /href="([^"]+\.(xlsx|pdf))"[^>]*>([\s\S]*?)<\/a>/gi;
+  const re = new RegExp(
+    `href="([^"]+\\.(${[...DATA_FORMATS, ...DOC_FORMATS].join('|')}))"[^>]*>([\\s\\S]*?)</a>`,
+    'gi',
+  );
   let m: RegExpExecArray | null;
   while ((m = re.exec(html)) !== null) {
     const href = m[1];
-    const format = m[2].toLowerCase() as 'xlsx' | 'pdf';
+    const format = m[2].toLowerCase();
     const text = m[3].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     // The filename is more reliable than the link text, which is often blank.
     const subject = `${href} ${text}`;
@@ -120,11 +136,11 @@ function parseReleases(html: string): Release[] {
   return out;
 }
 
-/** Sort key: newest financial year first, spreadsheets ahead of PDFs. */
+/** Sort key: newest financial year first, machine-readable data ahead of slides. */
 function recency(r: Release): number {
   const years = r.year.match(/20\d{2}/g)?.map(Number) ?? [];
   const y = years.length ? Math.max(...years) : 0;
-  return y * 10 + (r.format === 'xlsx' ? 1 : 0);
+  return y * 10 + (DATA_FORMATS.includes(r.format) ? 1 : 0);
 }
 
 export default async function handler(req: unknown, res: any) {

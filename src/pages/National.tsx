@@ -4,8 +4,8 @@ import { ArrowUpRight } from 'lucide-react';
 import { META, NATIONAL, PROVINCES, provinceSlug } from '../state/data';
 import { NATIONAL_POPULATION, PROVINCE_POPULATION } from '../data/population';
 import {
-  change, communityGroups, composition, latest, leafCategories, longRunTrend,
-  policeDetectedGroups, ratePer100k, rollingSum, seriesFor, yearOnYear,
+  change, communityGroups, communityTotalMonthly, composition, latest, leafCategories,
+  longRunTrend, policeDetectedGroups, ratePer100k, rollingSum, seriesFor, yearOnYear,
 } from '../engine/analysis';
 import { Bar, Delta, Panel, Stat } from '../components/ui';
 import { CompositionBar, Spark, TrendChart } from '../components/charts';
@@ -32,7 +32,9 @@ export default function National() {
   }, []);
 
   const monthlyTotal = useMemo(() => {
-    const s = seriesFor(NATIONAL, META, META.total, 'monthly');
+    // The total is not published monthly; it is summed from the seventeen
+    // community-reported offences. See communityTotalMonthly.
+    const s = communityTotalMonthly(NATIONAL, META);
     return { raw: s, rolling: rollingSum(s, 12) };
   }, []);
 
@@ -149,7 +151,13 @@ export default function National() {
           <p className="px-5 pb-4 text-[11px] leading-relaxed text-bone-500">
             The first eleven months are blank because a twelve-month total cannot be formed
             from them. Raw monthly counts swing hard with the festive season; the rolling
-            total is what shows whether the level itself is moving.
+            total is what shows whether the level itself is moving.{' '}
+            <span className="text-bone-400">
+              This series is derived: SAPS publishes no monthly total, so it is summed from
+              the seventeen community-reported offences. It runs about a percent above the
+              published annual figure for 2024/25, because counts are revised between the
+              quarterly and annual releases.
+            </span>
           </p>
         )}
       </Panel>

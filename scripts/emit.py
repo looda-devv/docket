@@ -11,7 +11,14 @@ bd = importlib.util.module_from_spec(spec); sys.modules['bd'] = bd; spec.loader.
 
 annual, years = bd.harvest('saps_annual_2024_25.xlsx', 'year')
 monthly, months = {}, set()
-for f in ['q1st_2025_26.xlsx', 'q2nd_2025_26.xlsx', 'q3rd_2025_26.xlsx', 'q4_2025_26.xlsx']:
+# The 2026/27 first quarter arrives as .xlsm rather than .xlsx — SAPS changed
+# the format for that release, and it is listed on the page with a .pptx
+# presentation instead of a PDF. Matching on extension alone would miss it.
+QUARTERLIES = [
+    'q1st_2025_26.xlsx', 'q2nd_2025_26.xlsx', 'q3rd_2025_26.xlsx', 'q4_2025_26.xlsx',
+    'q1_2026_27.xlsm',
+]
+for f in QUARTERLIES:
     part, ms = bd.harvest(f, 'month')
     months.update(ms)
     for k, v in part.items():

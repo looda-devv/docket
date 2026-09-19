@@ -149,6 +149,35 @@ export function policeDetectedGroups(meta: Meta): string[] {
 }
 
 /**
+ * A monthly series for total community-reported serious crime.
+ *
+ * SAPS never publishes this total monthly — nor three of its four groups. Only
+ * the individual offences appear in the quarterly releases, so the total has to
+ * be summed from the seventeen community-reported categories.
+ *
+ * That sum does not exactly equal the published annual figure, and the reason
+ * is worth knowing rather than hiding: SAPS revises counts between the
+ * quarterly release and the annual one, as late dockets and reclassifications
+ * work through. Across the four complete years here the derived total lands
+ * within 0.05% for three of them and 1.3% out for 2024/25. The annual file is
+ * the revised, authoritative figure; this series is the only way to see the
+ * shape of the year between those points, and it is labelled as derived
+ * wherever it is shown.
+ */
+export function communityTotalMonthly(place: Place, meta: Meta): (number | null)[] {
+  const leaves = communityGroups(meta).flatMap((g) => meta.groups[g] ?? []);
+  const rows = leaves.map((c) => seriesFor(place, meta, c, 'monthly'));
+  return meta.months.map((_, j) => {
+    const vals = rows.map((r) => r[j]);
+    // One missing offence makes the month's total wrong rather than merely
+    // incomplete, so the whole month is withheld.
+    return vals.some((v) => v === null || v === undefined)
+      ? null
+      : vals.reduce((a, b) => (a as number) + (b as number), 0);
+  });
+}
+
+/**
  * The leaf categories — those that are not rollups of other categories.
  *
  * These are the only ones that can be safely added together. Everything else

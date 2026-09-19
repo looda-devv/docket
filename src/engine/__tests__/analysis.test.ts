@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  change, communityGroups, composition, latest, leafCategories, longRunTrend,
-  policeDetectedGroups, rank, ratePer100k, rollingSum, seriesFor,
+  change, communityGroups, communityTotalMonthly, composition, latest, leafCategories,
+  longRunTrend, policeDetectedGroups, rank, ratePer100k, rollingSum, seriesFor,
 } from '../analysis';
 import meta from '../../data/saps/meta.json';
 import national from '../../data/saps/national.json';
@@ -16,7 +16,9 @@ const PROV = provinces as unknown as Place[];
 describe('published SAPS data', () => {
   it('carries the full hierarchy and period coverage', () => {
     expect(M.years).toHaveLength(10);
-    expect(M.months).toHaveLength(60);
+    expect(M.months).toHaveLength(63);
+    // Extended by the 2026/27 first quarter, which SAPS published as .xlsm.
+    expect(M.months[M.months.length - 1]).toBe('2026-06');
     expect(M.provinces).toHaveLength(9);
     expect(PROV).toHaveLength(9);
     expect(M.stationCount).toBe(1172);
@@ -122,7 +124,7 @@ describe('null handling', () => {
 
   it('builds a twelve-month rolling total from the real monthly series', () => {
     const s = seriesFor(RSA, M, 'Murder', 'monthly');
-    expect(s).toHaveLength(60);
+    expect(s).toHaveLength(M.months.length);
     const rolled = rollingSum(s, 12);
     const last = rolled[rolled.length - 1];
     // A rolling year of murders should land near the annual figure.
@@ -162,5 +164,72 @@ describe('the community-reported total and what sits outside it', () => {
     // It is substantial — large enough that folding it in would badly distort
     // any breakdown that claimed to be of reported crime.
     expect(val(police[0])).toBeGreaterThan(200_000);
+  });
+});
+
+describe('the derived monthly total', () => {
+  it('exists for every month, because SAPS publishes none of it', () => {
+    // The grand total and three of its four groups are absent from every
+    // quarterly release — only the individual offences appear monthly.
+    const published = seriesFor(RSA, M, M.total, 'monthly');
+    expect(published.every((v) => v === null || v === undefined)).toBe(true);
+
+    const derived = communityTotalMonthly(RSA, M);
+    expect(derived).toHaveLength(M.months.length);
+    expect(derived.every((v) => typeof v === 'number')).toBe(true);
+  });
+
+  it('is summed from exactly the seventeen community-reported offences', () => {
+    const leaves = communityGroups(M).flatMap((g) => M.groups[g] ?? []);
+    expect(leaves).toHaveLength(17);
+  });
+
+  it('reconciles with the published annual figure, within the revision gap', () => {
+    // SAPS revises counts between the quarterly and annual releases, so these
+    // do not match exactly. Three of the four complete years agree to better
+    // than 0.15%; 2024/25 is 1.3% out. This asserts the derivation is sound
+    // without pretending the two releases agree.
+    const derived = communityTotalMonthly(RSA, M);
+    const fyTotal = (label: string) => {
+      const [start] = label.split('-').map(Number);
+      let sum = 0;
+      for (let i = 0; i < M.months.length; i += 1) {
+        const [y, mo] = M.months[i].split('-').map(Number);
+        const fy = mo >= 4 ? y : y - 1;
+        if (fy === start) sum += derived[i] ?? 0;
+      }
+      return sum;
+    };
+    for (const year of ['2021-2022', '2022-2023', '2023-2024', '2024-2025']) {
+      const published = latest(
+        seriesFor(RSA, M, M.total).slice(0, M.years.indexOf(year) + 1), M.years)!.value;
+      const drift = Math.abs(fyTotal(year) - published) / published;
+      expect(drift).toBeLessThan(0.02);
+    }
+  });
+
+  it('carries the new quarter: April to June 2026', () => {
+    const murders = seriesFor(RSA, M, 'Murder', 'monthly');
+    const idx = ['2026-04', '2026-05', '2026-06'].map((m) => M.months.indexOf(m));
+    expect(idx.every((i) => i >= 0)).toBe(true);
+
+    const quarter = idx.reduce((s, i) => s + (murders[i] ?? 0), 0);
+    // 5 427 murders in the quarter, down from 5 770 in the same quarter of 2025.
+    expect(quarter).toBe(5_427);
+
+    const prior = ['2025-04', '2025-05', '2025-06']
+      .map((m) => murders[M.months.indexOf(m)] ?? 0)
+      .reduce((a, b) => a + b, 0);
+    expect(prior).toBe(5_770);
+    expect(quarter).toBeLessThan(prior);
+  });
+
+  it('keeps provinces summing to the national figure in the new months', () => {
+    for (const month of ['2026-04', '2026-05', '2026-06']) {
+      const j = M.months.indexOf(month);
+      const nat = seriesFor(RSA, M, 'Murder', 'monthly')[j];
+      const sum = PROV.reduce((s, p) => s + (seriesFor(p, M, 'Murder', 'monthly')[j] ?? 0), 0);
+      expect(sum).toBe(nat);
+    }
   });
 });

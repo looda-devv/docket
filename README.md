@@ -1,7 +1,7 @@
 # Docket
 
 South African crime statistics, analysed. Every category SAPS reports, across
-1 172 police stations, ten financial years and sixty months — with a live
+1 172 police stations, ten financial years and sixty-three months — with a live
 connection to the SAPS publication feed.
 
 Built with React, TypeScript, Vite and Tailwind. The analysis engine is pure
@@ -23,8 +23,9 @@ South Africa publishes none.
 SAPS releases crime statistics **quarterly**, as spreadsheets and a press
 presentation, weeks after the quarter they cover. The finest granularity in the
 data is monthly, and those months only become public when their quarter is
-released. Releases are not guaranteed either — the first quarter of 2026/27 was
-postponed, which is why the newest figures here end at March 2026.
+released. Releases are not guaranteed either: the first quarter of 2026/27 was formally
+postponed before eventually being published, which is why a release calendar
+and a postponement letter still sit on the SAPS page alongside the data.
 
 So this dashboard cannot update as crimes happen, and **any site claiming to do
 that for South Africa is not using SAPS data.** What this does instead:
@@ -43,12 +44,15 @@ updates, which for South African crime data is four times a year.
 
 | Source | What it gives |
 | --- | --- |
-| [SAPS crime statistics](https://www.saps.gov.za/services/crimestats.php) | 49 categories × 1 172 stations × 55 districts × 9 provinces. Ten financial years (2015/16–2024/25) and sixty continuous months (Apr 2021–Mar 2026). |
+| [SAPS crime statistics](https://www.saps.gov.za/services/crimestats.php) | 49 categories × 1 172 stations × 55 districts × 9 provinces. Ten financial years (2015/16–2024/25) and sixty-three continuous months (Apr 2021–Jun 2026). |
 | [Stats SA mid-year population estimates 2026](https://www.statssa.gov.za/publications/P0302/P03022026.pdf) | Provincial populations, for rates per 100 000. |
 
 Headline figures for 2024/25, as published: **24 692 murders**, 40 475 rapes,
 20 150 carjackings, 1 515 383 community-reported serious crimes. That is a
 murder rate near **39 per 100 000** — among the highest recorded anywhere.
+
+The newest quarter is **April–June 2026**: 5 427 murders, down from 5 770 in
+the same quarter of 2025, continuing a decline visible since 2022.
 
 ### Three traps in the source
 
@@ -64,6 +68,21 @@ in the *District* column. As a check, all four levels agree to the unit.
 one grand total, four groups beneath it, and cross-cutting rollups (sexual
 offences, TRIO crime) whose members are already counted inside those groups.
 Adding every category together roughly doubles the total.
+
+**SAPS changes file formats between releases.** The 2026/27 first quarter went
+up as a macro-enabled `.xlsm` with a `.pptx` presentation, where every previous
+quarter had been `.xlsx` and `.pdf`. An early version of the live check matched
+only the old extensions and reported the *previous* quarter as newest while the
+current one sat on the page — a live feed that silently ignores a release is
+worse than no live feed. It now matches every format SAPS uses and reports
+which one it found.
+
+**No monthly total is published.** The grand total and three of its four groups
+appear only in the annual release; the quarterly files carry individual
+offences alone. The monthly total shown here is summed from the seventeen
+community-reported offences, and labelled as derived. It does not match the
+annual figure exactly — SAPS revises counts between the quarterly and annual
+releases, and across the four complete years the gap runs from 0.04% to 1.3%.
 
 **Police-detected crime is not part of the reported total.** Drug possession,
 drunk driving and illegal firearms are found by police rather than reported by
@@ -103,7 +122,7 @@ Two comparisons the dashboard deliberately makes carefully:
 ```bash
 npm install
 npm run dev        # http://localhost:5173 — the live check needs the deployed function
-npm test           # 17 tests over the engine and the published figures
+npm test           # 22 tests over the engine and the published figures
 npm run build
 ```
 
